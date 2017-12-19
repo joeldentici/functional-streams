@@ -1,0 +1,7 @@
+# functional-streams
+Event streams for "functional reactive programming." This library is meant to be an easy to understand implementation of this concept, not necessarily high-performance. The implementation doesn't use a bunch of objects communicating and prototypes to get better performance like most event stream libraries. Instead it is written in functional style (although implementing some common operators requires internally using mutation and other side effects). This makes it more clear how each operator works.
+
+The event streams in this library mostly implement the Observable proposal. They do not implement error handling, and I think it is shameful that the spec and most implementations do this. Event streams are not a replacement for the concept of "asynchronous computation," a concept where failure actually makes sense. Event streams should not have "fail-fast" semantics and that is the best type of failure semantics you will get with a monadic interface. If you want to compose asynchronous computations, respecting "fail-fast", then Promises or lazy Futures are the best way to do this. Then map their results into a `Stream (Either Error a)`. You can then get back to reactive programming with the stream, just multicast it and send errors one way and results the other (which is what you would do anyway!).
+
+## Rest of documentation
+Coming later...

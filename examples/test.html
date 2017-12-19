@@ -1,0 +1,119 @@
+<!doctype html>
+<html>
+	<head>
+		<script src="../src/index.js"></script>
+		<script>
+		//DOM event listener -> Stream of DOM events
+		function fromEvent(x, t) {
+			return Stream.create(function(n, e) {
+				x.addEventListener(t, function(ev) {
+					n(ev);
+				});
+			});
+		}
+
+		//same as fromEvent, but with css selectors
+		function fromDOM(s, t) {
+			return fromEvent(document.querySelector(s), t);
+		}
+
+		//same as fromDOM, but maps event to its target's value
+		function domValue(s, t) {
+			return fromDOM(s, t).map(function(ev) {
+				return ev.target.value;
+			});
+		}
+
+		//set html of a div/span
+		function render(s) {
+			return function(v) {
+				document.querySelector(s).innerHTML = v;
+			}
+		}
+
+		//curried add to use with applicatives
+		function add(x) {
+			return function(y) {
+				return x + y;
+			}
+		}
+
+		//not operator on predicates (rather than booleans)
+		function not(p) {
+			return function(x) {
+				return !p(x);
+			}
+		}
+
+		//gets a signal of the history of the specified signal
+		function historySignal(s$) {
+			//skip the initial value so we don't include
+			//it in the history
+			return s$.skip(1).scan(function(st, value) {
+				return [].concat(st, value);
+			}, []);
+		}
+
+		//map a history list to an html list that
+		//when rendered is meaningful
+		function historyMessage(name) {
+			return function(hist) {
+				return '<ul>' + hist.map(function(x) {
+						return 'You entered "' + x + '" into ' + name;
+					}).map(function(x) {
+						return '<li>' + x + '</li>';
+					}).join('') + '</ul>';
+			}
+		}
+
+		//get a signal of history messages for a signal
+		function history(name, s$) {
+			return historySignal(s$).map(historyMessage(name));
+		}
+
+
+		//make the shitty calculator work
+		document.addEventListener('DOMContentLoaded', function() {
+			//a and b signals
+			var a$ = domValue('.a-val', 'input').map(Number).debounce(300).start(0).remember();
+			var b$ = domValue('.b-val', 'input').map(Number).debounce(300).start(0).remember();
+
+			//a + b signal
+			var aplusb$ = a$.map(add).app(b$).filter(not(isNaN));
+
+			//history for a signal
+			var aHistory$ = history('A', a$);
+
+			//history for b signal
+			var bHistory$ = history('B', b$);
+
+			//render the a+b signal
+			aplusb$.forEach(render('.c-val'));
+
+			//render the a signal history signal
+			aHistory$.forEach(render('.a-entered'));
+
+			//render the b signal history signal
+			bHistory$.forEach(render('.b-entered'));
+		});
+
+		</script>
+
+	</head>
+	<body>
+		<h1>Shitty Money Calculator</h1>
+		<div>
+			A: $<input class="a-val" type="text">
+		</div>
+		<div>
+			B: $<input class="b-val" type="text">
+		</div>
+		<div>
+			A + B: <div>$<span class="c-val"></span>
+		</div>
+		<div style="width: 60%">
+			<div style="vertical-align: top;display: inline-block;min-width: 50%" class="a-entered"></div>
+			<div style="vertical-align: top;display: inline-block;margin-left: 20px;" class="b-entered"></div>
+		</div>
+	</body>
+</html>
